@@ -1,15 +1,41 @@
 {
-  "name": "envman",
+  "name": "@xyph3r/backfup",
+  "publishConfig": {
+    "access": "public"
+  },
   "version": "0.1.0",
   "description": "Git-backed, encryption-first sync for repo .env files",
   "type": "module",
   "bin": {
-    "envman": "./dist/cli.js"
+    "backfup": "./dist/cli.js"
   },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "env",
+    "environment",
+    "variables",
+    "git",
+    "sync",
+    "encryption",
+    "cli"
+  ],
+  "author": "Faisal Ahmed <faisalahmedsifat@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/faisalahmedsifat/envman.git"
+  },
+  "bugs": {
+    "url": "https://github.com/faisalahmedsifat/envman/issues"
+  },
+  "homepage": "https://github.com/faisalahmedsifat/envman#readme",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "prepublishOnly": "bun run build"
   },
   "engines": {
     "node": ">=20"
