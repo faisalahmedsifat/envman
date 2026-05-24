@@ -1,0 +1,25 @@
+{
+  "name": "envman",
+  "version": "0.1.0",
+  "description": "Git-backed, encryption-first sync for repo .env files",
+  "type": "module",
+  "bin": {
+    "envman": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@inquirer/password": "^4.0.12",
+    "chalk": "^5.4.1",
+    "commander": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.3"
+  }
+}
