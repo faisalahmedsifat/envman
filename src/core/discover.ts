@@ -3,6 +3,7 @@ import path from "node:path";
 
 import type { EnvmanConfig } from "../types/index.js";
 import { EnvmanFilter } from "./ignore.js";
+import { normalizeRelativePath, normalizeScope } from "./scope.js";
 
 const DEFAULT_ENV_FILE_PATTERN = /^\.env(\..+)?$/;
 const DEFAULT_SKIP_DIRS = new Set([".git", "node_modules", "dist", "build", ".next", ".envman"]);
@@ -27,7 +28,7 @@ async function walk(
 
   for (const entry of entries) {
     const absolutePath = path.join(currentDir, entry.name);
-    const relativePath = path.relative(repoRoot, absolutePath);
+    const relativePath = normalizeRelativePath(path.relative(repoRoot, absolutePath));
 
     if (entry.isDirectory()) {
       if (DEFAULT_SKIP_DIRS.has(entry.name)) {
@@ -74,15 +75,16 @@ export async function discoverEnvFiles(
   await filter.load(repoRoot, config);
 
   let startDir = repoRoot;
-  if (scope !== undefined && scope.length > 0) {
-    const scopePath = path.join(repoRoot, scope);
+  const normalizedScope = normalizeScope(scope);
+  if (normalizedScope !== undefined) {
+    const scopePath = path.join(repoRoot, normalizedScope);
     try {
       const stats = await fs.stat(scopePath);
       if (stats.isDirectory()) {
         startDir = scopePath;
       } else if (stats.isFile() && isEnvFile(path.basename(scopePath))) {
         // If scope points directly to an env file, just check if it's ignored
-        const relativePath = path.relative(repoRoot, scopePath);
+        const relativePath = normalizeRelativePath(path.relative(repoRoot, scopePath));
         if (!filter.shouldSkipPath(relativePath, config)) {
           output.push({ absolutePath: scopePath, relativePath });
         }

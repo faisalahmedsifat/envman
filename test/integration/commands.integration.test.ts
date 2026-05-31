@@ -270,4 +270,103 @@ await runRun(repoRoot, undefined, { command: [process.execPath, "-e", ${JSON.str
       LOCAL_ONLY: "local-value"
     });
   });
+
+  test("init is idempotent and preserves existing config and manifest state", async () => {
+    const repoDir = makeTempRepo();
+    process.env.ENVMAN_PASSPHRASE = "test-pass";
+
+    writeFileSync(path.join(repoDir, ".env"), "ROOT_KEY=shared\n");
+
+    await runInit(repoDir);
+    await runSave(repoDir, "staging");
+
+    writeFileSync(
+      path.join(repoDir, ".envman", "config.json"),
+      JSON.stringify(
+        {
+          version: 1,
+          defaultProfile: "staging"
+        },
+        null,
+        2
+      ) + "\n"
+    );
+
+    await runInit(repoDir);
+
+    expect(JSON.parse(readFileSync(path.join(repoDir, ".envman", "config.json"), "utf8"))).toEqual({
+      version: 1,
+      defaultProfile: "staging",
+      include: [],
+      exclude: [".env.example", ".env.sample", "*.example", "*.sample"]
+    });
+
+    expect(JSON.parse(readFileSync(path.join(repoDir, ".envman", "manifest.json"), "utf8"))).toEqual({
+      version: 1,
+      defaultProfile: "default",
+      profiles: [
+        {
+          name: "staging",
+          updatedAt: expect.any(String),
+          file: "profiles/staging.enc"
+        }
+      ]
+    });
+  });
+
+  test("scoped operations only affect the exact scope subtree", async () => {
+    const repoDir = makeTempRepo();
+    process.env.ENVMAN_PASSPHRASE = "test-pass";
+
+    mkdirSync(path.join(repoDir, "apps/api-admin"), { recursive: true });
+    writeFileSync(path.join(repoDir, "apps/api/.env"), "API_ONLY=saved\n");
+    writeFileSync(path.join(repoDir, "apps/api-admin/.env"), "ADMIN_ONLY=saved\n");
+
+    await runInit(repoDir);
+    await runSave(repoDir);
+
+    writeFileSync(path.join(repoDir, "apps/api/.env"), "API_ONLY=local\n");
+    writeFileSync(path.join(repoDir, "apps/api-admin/.env"), "ADMIN_ONLY=local\n");
+
+    await runFetch(repoDir, undefined, { scope: "apps/api", replace: true });
+
+    expect(readFileSync(path.join(repoDir, "apps/api/.env"), "utf8")).toBe("API_ONLY=saved\n");
+    expect(readFileSync(path.join(repoDir, "apps/api-admin/.env"), "utf8")).toBe(
+      "ADMIN_ONLY=local\n"
+    );
+  });
+
+  test("partial config files are normalized with defaults during command reads", async () => {
+    const repoDir = makeTempRepo();
+    process.env.ENVMAN_PASSPHRASE = "test-pass";
+
+    writeFileSync(path.join(repoDir, ".env"), "ROOT_KEY=shared\n");
+
+    await runInit(repoDir);
+    writeFileSync(
+      path.join(repoDir, ".envman", "config.json"),
+      JSON.stringify(
+        {
+          version: 1,
+          defaultProfile: "default"
+        },
+        null,
+        2
+      ) + "\n"
+    );
+
+    await runSave(repoDir);
+
+    expect(JSON.parse(readFileSync(path.join(repoDir, ".envman", "manifest.json"), "utf8"))).toEqual({
+      version: 1,
+      defaultProfile: "default",
+      profiles: [
+        {
+          name: "default",
+          updatedAt: expect.any(String),
+          file: "profiles/default.enc"
+        }
+      ]
+    });
+  });
 });

@@ -1,13 +1,13 @@
 {
-  "name": "@xyph3r/backfup",
+  "name": "@xyph3r/envman",
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Git-backed, encryption-first sync for repo .env files",
   "type": "module",
   "bin": {
-    "backfup": "./dist/cli.js"
+    "envman": "./dist/cli.js"
   },
   "files": [
     "dist"
@@ -35,7 +35,7 @@
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "bun test",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "npm run build"
   },
   "engines": {
     "node": ">=20"

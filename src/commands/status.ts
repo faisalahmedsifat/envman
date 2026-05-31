@@ -9,6 +9,7 @@ import { readManifest } from "../core/manifest.js";
 import { mergeEnvFiles } from "../core/env-merge.js";
 import { resolvePassphrase, type PassphraseOptions } from "../core/passphrase.js";
 import { loadProfile } from "../core/profile.js";
+import { isPathWithinScope, normalizeScope } from "../core/scope.js";
 
 export interface StatusOptions extends PassphraseOptions {
   scope?: string;
@@ -24,12 +25,13 @@ export async function runStatus(
   const selectedProfile = profile ?? config.defaultProfile ?? manifest.defaultProfile ?? "default";
   const passphrase = await resolvePassphrase(repoRoot, options);
   const savedProfile = await loadProfile(repoRoot, selectedProfile, passphrase);
-  const localFiles = await discoverEnvFiles(repoRoot, config, options.scope);
+  const normalizedScope = normalizeScope(options.scope);
+  const localFiles = await discoverEnvFiles(repoRoot, config, normalizedScope);
   const localSet = new Set(localFiles.map((entry) => entry.relativePath));
 
-  const scopedSavedFiles = options.scope && options.scope.length > 0
-    ? savedProfile.files.filter((f) => f.path.startsWith(options.scope!))
-    : savedProfile.files;
+  const scopedSavedFiles = savedProfile.files.filter((file) =>
+    isPathWithinScope(file.path, normalizedScope)
+  );
 
   console.log(`envman — profile: ${selectedProfile}`);
 

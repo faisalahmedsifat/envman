@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
+import { createRequire } from "node:module";
 
 import { runDiff } from "./commands/diff.js";
 import { runFetch } from "./commands/fetch.js";
@@ -14,6 +15,9 @@ import { runRun } from "./commands/run.js";
 import { runSave } from "./commands/save.js";
 import { runStatus } from "./commands/status.js";
 import { getRepoRoot } from "./core/git.js";
+
+const require = createRequire(import.meta.url);
+const packageJson = require("../package.json") as { version: string };
 
 async function resolveRepoRoot(): Promise<string> {
   return getRepoRoot(process.cwd());
@@ -61,7 +65,7 @@ async function main(): Promise<void> {
   program
     .name("envman")
     .description("Git-backed, encryption-first sync for repo .env files")
-    .version("0.1.0");
+    .version(packageJson.version);
 
   program
     .command("init")

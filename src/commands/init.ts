@@ -1,9 +1,9 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
-import { DEFAULT_CONFIG, writeConfig } from "../core/config.js";
+import { readConfig, writeConfig } from "../core/config.js";
 import { pathExists, writeFileAtomic } from "../core/fs.js";
-import { DEFAULT_MANIFEST, writeManifest } from "../core/manifest.js";
+import { readManifest, writeManifest } from "../core/manifest.js";
 import { getBackupsDir, getEnvmanDir, getProfilesDir } from "../core/paths.js";
 
 const GITIGNORE_LINES = [
@@ -51,7 +51,7 @@ export async function runInit(repoRoot: string): Promise<void> {
   await fs.mkdir(getProfilesDir(repoRoot), { recursive: true });
   await fs.mkdir(getBackupsDir(repoRoot), { recursive: true });
 
-  await writeConfig(repoRoot, DEFAULT_CONFIG);
-  await writeManifest(repoRoot, DEFAULT_MANIFEST);
+  await writeConfig(repoRoot, await readConfig(repoRoot));
+  await writeManifest(repoRoot, await readManifest(repoRoot));
   await updateGitignore(repoRoot);
 }

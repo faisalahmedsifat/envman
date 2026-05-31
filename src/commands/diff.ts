@@ -10,6 +10,7 @@ import { readManifest } from "../core/manifest.js";
 import { resolvePassphrase, type PassphraseOptions } from "../core/passphrase.js";
 import { loadProfile } from "../core/profile.js";
 import { discoverEnvFiles } from "../core/discover.js";
+import { isPathWithinScope, normalizeScope } from "../core/scope.js";
 import type { TrackedEnvFile } from "../types/index.js";
 
 function printDiffHeader(label: string): void {
@@ -82,6 +83,7 @@ export async function runDiff(
   const manifest = await readManifest(repoRoot);
   const selectedDefault = config.defaultProfile ?? manifest.defaultProfile ?? "default";
   const passphrase = await resolvePassphrase(repoRoot, options);
+  const normalizedScope = normalizeScope(options.scope);
 
   if (rightProfile === undefined) {
     const selectedProfile = leftProfile ?? selectedDefault;
@@ -93,11 +95,11 @@ export async function runDiff(
       throw new EnvmanError(`Failed to decrypt profile ${selectedProfile}: ${message}`);
     }
 
-    const scopedSavedFiles = options.scope && options.scope.length > 0
-      ? savedProfile.files.filter((f) => f.path.startsWith(options.scope!))
-      : savedProfile.files;
+    const scopedSavedFiles = savedProfile.files.filter((file) =>
+      isPathWithinScope(file.path, normalizedScope)
+    );
 
-    const localFiles = await discoverEnvFiles(repoRoot, config, options.scope);
+    const localFiles = await discoverEnvFiles(repoRoot, config, normalizedScope);
     const localSavedFiles: TrackedEnvFile[] = [];
     for (const f of localFiles) {
       localSavedFiles.push({ path: f.relativePath, content: await fs.readFile(f.absolutePath, "utf8"), hash: "", lastModified: "" });
@@ -132,13 +134,13 @@ export async function runDiff(
     );
   }
 
-  const scopedLeftFiles = options.scope && options.scope.length > 0
-    ? leftSaved.files.filter((f) => f.path.startsWith(options.scope!))
-    : leftSaved.files;
+  const scopedLeftFiles = leftSaved.files.filter((file) =>
+    isPathWithinScope(file.path, normalizedScope)
+  );
 
-  const scopedRightFiles = options.scope && options.scope.length > 0
-    ? rightSaved.files.filter((f) => f.path.startsWith(options.scope!))
-    : rightSaved.files;
+  const scopedRightFiles = rightSaved.files.filter((file) =>
+    isPathWithinScope(file.path, normalizedScope)
+  );
 
   await showDiff(
     { name: `profile:${firstProfile}`, files: scopedLeftFiles },

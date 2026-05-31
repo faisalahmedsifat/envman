@@ -9,6 +9,7 @@ import { readManifest } from "../core/manifest.js";
 import { mergeEnvFiles } from "../core/env-merge.js";
 import { resolvePassphrase } from "../core/passphrase.js";
 import { loadProfile } from "../core/profile.js";
+import { isPathWithinScope, normalizeScope } from "../core/scope.js";
 
 export interface FetchOptions {
   dryRun?: boolean;
@@ -49,10 +50,11 @@ export async function runFetch(
   const selectedProfile = profile ?? config.defaultProfile ?? manifest.defaultProfile ?? "default";
   const passphrase = await resolvePassphrase(repoRoot, { passphraseEnv: options.passphraseEnv });
   const savedProfile = await loadProfile(repoRoot, selectedProfile, passphrase);
+  const normalizedScope = normalizeScope(options.scope);
   const plan: FetchPlanItem[] = [];
 
   for (const savedFile of savedProfile.files) {
-    if (options.scope && options.scope.length > 0 && !savedFile.path.startsWith(options.scope)) {
+    if (!isPathWithinScope(savedFile.path, normalizedScope)) {
       continue;
     }
 

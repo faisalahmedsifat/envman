@@ -6,6 +6,7 @@ import { discoverEnvFiles } from "../core/discover.js";
 import { readManifest } from "../core/manifest.js";
 import { resolvePassphrase, type PassphraseOptions } from "../core/passphrase.js";
 import { loadProfile, saveProfile } from "../core/profile.js";
+import { isPathWithinScope, normalizeScope } from "../core/scope.js";
 import type { TrackedEnvFile } from "../types/index.js";
 
 function sha256(content: string): string {
@@ -25,7 +26,8 @@ export async function runSave(
   const manifest = await readManifest(repoRoot);
   const selectedProfile = profile ?? config.defaultProfile ?? manifest.defaultProfile ?? "default";
   const passphrase = await resolvePassphrase(repoRoot, options);
-  const discoveredFiles = await discoverEnvFiles(repoRoot, config, options.scope);
+  const normalizedScope = normalizeScope(options.scope);
+  const discoveredFiles = await discoverEnvFiles(repoRoot, config, normalizedScope);
 
   const newFiles: TrackedEnvFile[] = [];
   for (const file of discoveredFiles) {
@@ -41,9 +43,11 @@ export async function runSave(
 
   let trackedFiles: TrackedEnvFile[] = newFiles;
 
-  if (options.scope && options.scope.length > 0) {
+  if (normalizedScope !== undefined) {
     const existingProfile = await loadProfile(repoRoot, selectedProfile, passphrase).catch(() => ({ files: [] }));
-    const filesOutOfScope = existingProfile.files.filter((f) => !f.path.startsWith(options.scope!));
+    const filesOutOfScope = existingProfile.files.filter(
+      (file) => !isPathWithinScope(file.path, normalizedScope)
+    );
     trackedFiles = [...filesOutOfScope, ...newFiles];
     trackedFiles.sort((left, right) => left.path.localeCompare(right.path));
   }
